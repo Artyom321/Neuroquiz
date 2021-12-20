@@ -14,6 +14,7 @@ logs/*
 # IPython
 profile_default/
 ipython_config.py
+questions_list.json
 
 # Remove previous ipynb_checkpoints
 #   git rm -r .ipynb_checkpoints/
