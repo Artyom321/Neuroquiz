@@ -81,7 +81,7 @@ class Bot:
             correct = self.stats[chat_id][0]
             total = self.stats[chat_id][1]
         message = f"Вы правильно ответили на {correct} из {total} вопросов.\n" \
-                  f"Ваш процент правильных ответов равен {correct // max(total, 1) * 100}%."
+                  f"Ваш процент правильных ответов равен {correct * 100 // max(total, 1)}%."
         self.send_message(chat_id, message)
 
     def start_command_handler(self, chat_id, update):
@@ -179,15 +179,22 @@ class Bot:
         params = {"chat_id": chat_id, "text": text}
         return requests.post(self.api_url + "sendMessage", params)
 
+    def process_update_name(self, update):
+        chat_id = update['message']['chat']['id']
+        if chat_id in self.name:
+            return
+        if "username" in update["message"]["from"]:
+            self.name[chat_id] = update["message"]["from"]["username"]
+        else:
+            self.name[chat_id] = update["message"]["from"]["first_name"]
+        self.logger.add_to_log(operation_type='add_name', chat_id=chat_id, name=self.name[chat_id])
+
     def main_loop(self):
         while True:
             updates = self.get_updates()
             for update in updates:
                 update["message"]["chat"]["id"] = str(update["message"]["chat"]["id"])
-                if "username" in update["message"]["from"]:
-                    self.name[update["message"]["chat"]["id"]] = update["message"]["from"]["username"]
-                else:
-                    self.name[update["message"]["chat"]["id"]] = update["message"]["from"]["first_name"]
+                self.process_update_name(update)
                 self.process_update(update)
                 self.offset = max(self.offset, update['update_id'] + 1)
             time.sleep(1)
