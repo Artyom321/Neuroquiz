@@ -16,6 +16,7 @@ class Bot:
         self.logger.recover()
 
         self.questions = self.logger.main_log_data['questions_assignment']
+        self.stats = self.logger.main_log_data['stats']
 
         self.offset = 0
 
@@ -23,11 +24,14 @@ class Bot:
             '/start': self.start_command_handler,
             '/question': self.question_command_handler,
             '/help': self.help_command_handler,
+            '/stats': self.stats_command_handler,
+            '/leaderboard': self.leaderboard_command_handler
         }
 
         self.questions_list = dict()
         self.theme_list = dict()
         self.theme_list["Random"] = []
+
         with open('questions_list.json', encoding='utf-8') as f:
             tmp = json.load(f)
         for question in tmp:
@@ -44,6 +48,18 @@ class Bot:
         if "result" not in resp:
             return []
         return resp["result"]
+
+    def leaderboard_command_handler(self, chat_id, update):
+
+    def stats_command_handler(self, chat_id, update):
+        correct = 0
+        total = 0
+        if chat_id in self.stats:
+            correct = self.stats[chat_id][0]
+            total = self.stats[chat_id][1]
+        message = f"Вы правильно ответили на {correct} из {total} вопросов.\n" \
+                  f"Ваш процент правильных ответов равен {correct // max(total, 1) * 100}%."
+        self.send_message(chat_id, message)
 
     def start_command_handler(self, chat_id, update):
         greetings_message = 'Здравствуйте, {}!'.format(update['message']['from']['username'])
@@ -84,14 +100,22 @@ class Bot:
         self.logger.add_to_log(operation_type='answer', chat_id=chat_id)
         if question_id is None:
             reply_text = 'Сейчас у Вас нет активного вопроса'
+            self.send_message(chat_id, reply_text)
         elif question_id == -1:
             if update['message']['text'] not in self.theme_list:
                 self.send_message(chat_id, "Такой темы нет!")
             else:
                 self.choose_theme_question(chat_id, update['message']['text'])
         elif self.questions_list[question_id]["answer"] == update['message']['text']:
+            if chat_id not in self.stats:
+                self.stats[chat_id] = [0, 0]
+            self.stats[chat_id][0] += 1
+            self.stats[chat_id][1] += 1
             self.send_message(chat_id, "Верный ответ!")
         else:
+            if chat_id not in self.stats:
+                self.stats[chat_id] = [0, 0]
+            self.stats[chat_id][1] += 1
             self.send_message(chat_id, "Неправильный ответ")
 
     def process_update(self, update):
