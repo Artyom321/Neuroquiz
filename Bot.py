@@ -62,7 +62,14 @@ class Bot:
         self.send_message(chat_id, message)
 
     def start_command_handler(self, chat_id, update):
-        greetings_message = 'Здравствуйте, {}!'.format(update['message']['from']['username'])
+        if 'username' in update['message']['from']:
+            greetings_message = 'Здравствуйте, {}!'.format(update['message']['from']['username'])
+        elif 'first_name' in update['message']['from'] and 'last_name' in update['message']['from']:
+            greetings_message = 'Здравствуйте, {} {}!'.format(update['message']['from']['first_name'],
+                                                              update['message']['from']['last_name'])
+        else:
+            greetings_message = 'Здравствуйте!'
+
         self.send_message(chat_id, greetings_message)
 
     def choose_theme(self, chat_id):
