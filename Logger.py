@@ -145,6 +145,3 @@ class Logger:
                 self.commit_operation(operation)
         self.write_main_log()
         self.clear_tmp_log()
-
-
-
