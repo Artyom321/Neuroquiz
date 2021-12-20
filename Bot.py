@@ -71,7 +71,7 @@ class Bot:
         for i in range(len(top)):
             if i > 0:
                 text += f"\n"
-            text += f"{i + 1}. {self.name[top[i][0]]} - {top[i][1]}"
+            text += f"{i + 1}. {self.name[str(top[i][0])]} - {top[i][1]}"
         self.send_message(chat_id, text)
 
     def stats_command_handler(self, chat_id, update):
