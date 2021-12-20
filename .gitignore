@@ -1,6 +1,9 @@
 tmp/
 logs/*
 !logs/.gitkeep
+
+bake_dir/*
+!bake_dir/.gitkeep
 # Created by https://www.toptal.com/developers/gitignore/api/python,jupyternotebooks,pycharm+all
 # Edit at https://www.toptal.com/developers/gitignore?templates=python,jupyternotebooks,pycharm+all
 
