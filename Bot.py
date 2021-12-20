@@ -25,7 +25,7 @@ class Bot:
             '/question': self.question_command_handler,
             '/help': self.help_command_handler,
             '/stats': self.stats_command_handler,
-            '/leaderboard': self.leaderboard_command_handler
+            # '/leaderboard': self.leaderboard_command_handler
         }
 
         self.questions_list = dict()
@@ -49,7 +49,7 @@ class Bot:
             return []
         return resp["result"]
 
-    def leaderboard_command_handler(self, chat_id, update):
+    # def leaderboard_command_handler(self, chat_id, update):
 
     def stats_command_handler(self, chat_id, update):
         correct = 0
@@ -97,10 +97,10 @@ class Bot:
 
     def simple_text_handler(self, chat_id, update):
         question_id = self.questions.pop(chat_id, None)
-        self.logger.add_to_log(operation_type='answer', chat_id=chat_id)
         if question_id is None:
             reply_text = 'Сейчас у Вас нет активного вопроса'
             self.send_message(chat_id, reply_text)
+            self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='not_active')
         elif question_id == -1:
             if update['message']['text'] not in self.theme_list:
                 self.send_message(chat_id, "Такой темы нет!")
@@ -112,11 +112,13 @@ class Bot:
             self.stats[chat_id][0] += 1
             self.stats[chat_id][1] += 1
             self.send_message(chat_id, "Верный ответ!")
+            self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='ok')
         else:
             if chat_id not in self.stats:
                 self.stats[chat_id] = [0, 0]
             self.stats[chat_id][1] += 1
             self.send_message(chat_id, "Неправильный ответ")
+            self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='wrong')
 
     def process_update(self, update):
         if 'message' not in update:

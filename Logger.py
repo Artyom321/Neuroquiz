@@ -13,12 +13,12 @@ class Logger:
         self.commit_operation_handlers = {
             'next': self.commit_operation_next,
             'answer': self.commit_operation_answer,
-
         }
 
     def init_main_log_structure(self):
         self.main_log_data = {
             'questions_assignment': dict(),
+            'stats': dict(),
             'last_committed_temp_log_id': -1,
         }
 
@@ -77,6 +77,13 @@ class Logger:
 
     def commit_operation_answer(self, operation):
         self.main_log_data['questions_assignment'].pop(operation['chat_id'], None)
+        if operation['status'] == 'not_active':
+            return
+        if operation['chat_id'] not in self.main_log_data['stats']:
+            self.main_log_data['stats'][operation['chat_id']] = [0, 0]
+        self.main_log_data['stats'][operation['chat_id']][0] += 1
+        if operation['status'] == 'ok':
+            self.main_log_data['stats'][operation['chat_id']][1] += 1
 
     def commit_operation(self, operation):
         if operation['log_id'] <= self.main_log_data['last_committed_temp_log_id']:
