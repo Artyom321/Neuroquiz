@@ -144,7 +144,7 @@ class Bot:
                 self.send_message(chat_id, "Такой темы нет!")
             else:
                 self.choose_theme_question(chat_id, update['message']['text'])
-        elif question_id[1] == update['message']['text']:
+        elif str(question_id[1]) == update['message']['text']:
             if chat_id not in self.stats:
                 self.stats[chat_id] = [0, 0]
             self.stats[chat_id][0] += 1
@@ -155,7 +155,7 @@ class Bot:
             if chat_id not in self.stats:
                 self.stats[chat_id] = [0, 0]
             self.stats[chat_id][1] += 1
-            self.send_message(chat_id, "Неправильный ответ")
+            self.send_message(chat_id, f"Неправильный ответ.\nПравильный ответ: {question_id[1]}")
             self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='wrong')
 
     def process_update(self, update):
