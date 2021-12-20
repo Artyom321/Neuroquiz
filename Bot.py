@@ -201,6 +201,7 @@ class Bot:
         while True:
             updates = self.get_updates()
             for update in updates:
+                print(update)
                 update["message"]["chat"]["id"] = str(update["message"]["chat"]["id"])
                 self.process_update_name(update)
                 self.process_update(update)
