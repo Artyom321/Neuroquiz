@@ -17,6 +17,7 @@ class Bot:
 
         self.questions = self.logger.main_log_data['questions_assignment']
         self.stats = self.logger.main_log_data['stats']
+        self.name = self.logger.main_log_data['name']
 
         self.offset = 0
 
@@ -25,12 +26,13 @@ class Bot:
             '/question': self.question_command_handler,
             '/help': self.help_command_handler,
             '/stats': self.stats_command_handler,
-            # '/leaderboard': self.leaderboard_command_handler
+            '/leaderboard': self.leaderboard_command_handler
         }
 
         self.questions_list = dict()
         self.theme_list = dict()
         self.theme_list["Random"] = []
+        self.name = dict()
 
         with open('questions_list.json', encoding='utf-8') as f:
             tmp = json.load(f)
@@ -49,7 +51,28 @@ class Bot:
             return []
         return resp["result"]
 
-    # def leaderboard_command_handler(self, chat_id, update):
+    def leaderboard_command_handler(self, chat_id, update):
+        top = []
+        in_top = set()
+        for i in range(10):
+            mx = -1
+            best_chat_id = -1
+            for x in self.stats:
+                if x in in_top:
+                    continue
+                if self.stats[x][0] > mx:
+                    mx = self.stats[x][0]
+                    best_chat_id = x
+            if mx == -1:
+                break
+            in_top.add(best_chat_id)
+            top.append([best_chat_id, mx])
+        text = f"Список лидеров:\n"
+        for i in range(len(top)):
+            if i > 0:
+                text += f"\n"
+            text += f"{i + 1}. {self.name[top[i][0]]}: {top[i][1]} ответов."
+        self.send_message(chat_id, text)
 
     def stats_command_handler(self, chat_id, update):
         correct = 0
@@ -92,11 +115,11 @@ class Bot:
         self.questions[chat_id] = question_id
         self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=question_id)
         reply_text = '{}'.format(self.questions_list[question_id]["question"])
-        variants = []
         wrong_answers = self.questions_list[question_id]["wrong_answers"]
         random.shuffle(wrong_answers)
         variants = wrong_answers[0:3]
         variants.append(self.questions_list[question_id]["answer"])
+        random.shuffle(variants)
         if self.questions_list[question_id]["photo"] == 0:
             self.give_text_question(chat_id, reply_text, variants)
         else:
@@ -160,7 +183,11 @@ class Bot:
         while True:
             updates = self.get_updates()
             for update in updates:
-                print(update)
+                update["message"]["chat"]["id"] = str(update["message"]["chat"]["id"])
+                if "username" in update["message"]["from"]:
+                    self.name[update["message"]["chat"]["id"]] = update["message"]["from"]["username"]
+                else:
+                    self.name[update["message"]["chat"]["id"]] = update["message"]["from"]["first_name"]
                 self.process_update(update)
                 self.offset = max(self.offset, update['update_id'] + 1)
             time.sleep(1)
