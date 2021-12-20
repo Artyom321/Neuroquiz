@@ -31,7 +31,7 @@ class Bot:
 
         self.questions_list = dict()
         self.theme_list = dict()
-        self.theme_list["Random"] = []
+        self.theme_list["Случайная тема"] = []
         self.name = dict()
 
         with open('questions_list.json', encoding='utf-8') as f:
@@ -41,7 +41,7 @@ class Bot:
             if question["theme"] not in self.theme_list:
                 self.theme_list[question["theme"]] = []
             self.theme_list[question["theme"]].append(cur_id)
-            self.theme_list["Random"].append(cur_id)
+            self.theme_list["Случайная тема"].append(cur_id)
             self.questions_list[question["id"]] = question
 
     def get_updates(self, timeout=30):
@@ -67,11 +67,11 @@ class Bot:
                 break
             in_top.add(best_chat_id)
             top.append([best_chat_id, mx])
-        text = f"Список лидеров:\n"
+        text = f"Список лидеров (количество правильных ответов):\n"
         for i in range(len(top)):
             if i > 0:
                 text += f"\n"
-            text += f"{i + 1}. {self.name[top[i][0]]}: {top[i][1]} ответов."
+            text += f"{i + 1}. {self.name[top[i][0]]} - {top[i][1]}"
         self.send_message(chat_id, text)
 
     def stats_command_handler(self, chat_id, update):
@@ -104,26 +104,34 @@ class Bot:
 
     def question_command_handler(self, chat_id, update):
         self.choose_theme(chat_id)
-        self.questions[chat_id] = -1
-        self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=-1)
+        self.questions[chat_id] = [-1, -1]
+        self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=[-1, -1])
 
     def help_command_handler(self, chat_id, update):
         self.send_message(chat_id, 'Памагити...')
 
     def choose_theme_question(self, chat_id, theme):
         question_id = self.theme_list[theme][random.randint(0, len(self.theme_list[theme]) - 1)]
-        self.questions[chat_id] = question_id
-        self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=question_id)
-        reply_text = '{}'.format(self.questions_list[question_id]["question"])
+        reply_text = self.questions_list[question_id]["question"]
+        reply_text += "\nВарианты ответов:"
         wrong_answers = self.questions_list[question_id]["wrong_answers"]
         random.shuffle(wrong_answers)
         variants = wrong_answers[0:3]
         variants.append(self.questions_list[question_id]["answer"])
         random.shuffle(variants)
+        correct = 0
+        for i in range(4):
+            reply_text += '\n' + str(i + 1) + '. ' + variants[i]
+            if variants[i] == self.questions_list[question_id]["answer"]:
+                correct = i + 1
+
+        self.questions[chat_id] = [question_id, correct]
+        self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=[question_id, correct])
+
         if self.questions_list[question_id]["photo"] == 0:
-            self.give_text_question(chat_id, reply_text, variants)
+            self.give_text_question(chat_id, reply_text, ["1", "2", "3", "4"])
         else:
-            self.give_photo_question(chat_id, self.questions_list[question_id]["link"], reply_text, variants)
+            self.give_photo_question(chat_id, self.questions_list[question_id]["link"], reply_text, ["1", "2", "3", "4"])
 
     def simple_text_handler(self, chat_id, update):
         question_id = self.questions.pop(chat_id, None)
@@ -131,12 +139,12 @@ class Bot:
             reply_text = 'Сейчас у Вас нет активного вопроса'
             self.send_message(chat_id, reply_text)
             self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='not_active')
-        elif question_id == -1:
+        elif question_id == [-1, -1]:
             if update['message']['text'] not in self.theme_list:
                 self.send_message(chat_id, "Такой темы нет!")
             else:
                 self.choose_theme_question(chat_id, update['message']['text'])
-        elif self.questions_list[question_id]["answer"] == update['message']['text']:
+        elif question_id[1] == update['message']['text']:
             if chat_id not in self.stats:
                 self.stats[chat_id] = [0, 0]
             self.stats[chat_id][0] += 1
