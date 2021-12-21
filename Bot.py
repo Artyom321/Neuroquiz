@@ -32,7 +32,6 @@ class Bot:
         self.questions_list = dict()
         self.theme_list = dict()
         self.theme_list["Случайная тема"] = []
-        self.name = dict()
 
         with open('questions_list.json', encoding='utf-8') as f:
             tmp = json.load(f)
