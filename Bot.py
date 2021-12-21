@@ -18,7 +18,7 @@ class Bot:
         self.questions = self.logger.main_log_data['questions_assignment']
         self.stats = self.logger.main_log_data['stats']
         self.name = self.logger.main_log_data['name']
-        self.last_theme = self.logger.main_log_data['last_name']
+        self.last_theme = self.logger.main_log_data['last_theme']
 
         self.offset = 0
 
@@ -125,8 +125,8 @@ class Bot:
 
     def choose_theme_question(self, chat_id, theme):
         question_id = self.theme_list[theme][random.randint(0, len(self.theme_list[theme]) - 1)]
-        self.last_theme[chat_id] = question_id
-        # add logger
+        self.last_theme[chat_id] = self.questions_list[question_id]['theme']
+        self.logger.add_to_log(operation_type='last_theme_update', chat_id=chat_id, theme=self.last_theme[chat_id])
         reply_text = self.questions_list[question_id]["question"]
         reply_text += "\nВарианты ответов:"
         wrong_answers = self.questions_list[question_id]["wrong_answers"]
