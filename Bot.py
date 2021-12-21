@@ -95,28 +95,7 @@ class Bot:
 
     def rand_command_handler(self, chat_id, update):
         theme = "Случайная тема"
-        question_id = self.theme_list[theme][random.randint(0, len(self.theme_list[theme]) - 1)]
-        reply_text = self.questions_list[question_id]["question"]
-        reply_text += "\nВарианты ответов:"
-        wrong_answers = self.questions_list[question_id]["wrong_answers"]
-        random.shuffle(wrong_answers)
-        variants = wrong_answers[0:3]
-        variants.append(self.questions_list[question_id]["answer"])
-        random.shuffle(variants)
-        correct = 0
-        for i in range(4):
-            reply_text += '\n' + str(i + 1) + '. ' + variants[i]
-            if variants[i] == self.questions_list[question_id]["answer"]:
-                correct = i + 1
-
-        self.questions[chat_id] = [question_id, correct]
-        self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=[question_id, correct])
-
-        if self.questions_list[question_id]["photo"] == 0:
-            self.give_text_question(chat_id, reply_text, ["1", "2", "3", "4"])
-        else:
-            self.give_photo_question(chat_id, self.questions_list[question_id]["link"], reply_text,
-                                     ["1", "2", "3", "4"])
+        self.choose_theme_question(chat_id, theme)
 
     def start_command_handler(self, chat_id, update):
         greetings_message = open('bot_info_messages/greetings.txt', 'r', encoding='utf-8').read().replace('{{name}}', self.name[chat_id])
@@ -151,12 +130,13 @@ class Bot:
         random.shuffle(wrong_answers)
         variants = wrong_answers[0:3]
         cnt_correct = len(self.questions_list[question_id]["answer"])
-        variants.append(self.questions_list[question_id]["answer"][random.randint(0, cnt_correct - 1)])
+        answer = self.questions_list[question_id]["answer"][random.randint(0, cnt_correct - 1)]
+        variants.append(answer)
         random.shuffle(variants)
         correct = 0
         for i in range(4):
             reply_text += '\n' + str(i + 1) + '. ' + variants[i]
-            if variants[i] == self.questions_list[question_id]["answer"]:
+            if variants[i] == answer:
                 correct = i + 1
 
         self.questions[chat_id] = [question_id, correct]
