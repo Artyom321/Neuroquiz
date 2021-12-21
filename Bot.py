@@ -19,6 +19,7 @@ class Bot:
         self.stats = self.logger.main_log_data['stats']
         self.name = self.logger.main_log_data['name']
         self.last_theme = self.logger.main_log_data['last_theme']
+        self.last_markup = dict()
 
         self.offset = 0
 
@@ -173,13 +174,37 @@ class Bot:
             self.stats[chat_id][0] += 1
             self.stats[chat_id][1] += 1
             self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='ok')
-            self.send_message(chat_id, "Верный ответ!\nВведите /rep, если хотите вопрос на ту же тему.")
+            self.send_message(chat_id, "Верный ответ!")
+            keyboard = []
+            keyboard.append([{"text": "Вопрос на ту же тему", "callback_data": "/rep"}])
+            keyboard.append([{"text": "Случайный вопрос", "callback_data": "/rand"}])
+            keyboard.append([{"text": "Моя статистика", "callback_data": "/stats"}])
+            params = {"chat_id": chat_id, "text": "Предлагаем Вам:",
+                      "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
+            while True:
+                res = requests.post(self.api_url + "sendMessage", params).json()
+                if "result" not in res:
+                    continue
+                self.last_markup[chat_id] = res["result"]["message_id"]
+                break
         else:
             if chat_id not in self.stats:
                 self.stats[chat_id] = [0, 0]
             self.stats[chat_id][1] += 1
             self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='wrong')
-            self.send_message(chat_id, f"Неправильный ответ.\nПравильный ответ: {question_id[1]}.\nВведите /rep, если хотите вопрос на ту же тему.")
+            self.send_message(chat_id, f"Неправильный ответ.\nПравильный ответ: {question_id[1]}.")
+            keyboard = []
+            keyboard.append([{"text": "Вопрос на ту же тему", "callback_data": "/rep"}])
+            keyboard.append([{"text": "Случайный вопрос", "callback_data": "/rand"}])
+            keyboard.append([{"text": "Моя статистика", "callback_data": "/stats"}])
+            params = {"chat_id": chat_id, "text": "Предлагаем Вам:",
+                      "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
+            while True:
+                res = requests.post(self.api_url + "sendMessage", params).json()
+                if "result" not in res:
+                    continue
+                self.last_markup[chat_id] = res["result"]["message_id"]
+                break
 
     def process_update(self, update):
         if 'message' not in update:
@@ -195,16 +220,26 @@ class Bot:
     def give_text_question(self, chat_id, text, variants):
         keyboard = []
         for v in variants:
-            keyboard.append([v])
-        params = {"chat_id": chat_id, "text": text, "reply_markup": json.dumps({"keyboard": keyboard, "one_time_keyboard": True, "resize_keyboard": True})}
-        requests.post(self.api_url + "sendMessage", params)
+            keyboard.append([{"text": v, "callback_data": v}])
+        params = {"chat_id": chat_id, "text": text, "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
+        while True:
+            res = requests.post(self.api_url + "sendMessage", params).json()
+            if "result" not in res:
+                continue
+            self.last_markup[chat_id] = res["result"]["message_id"]
+            break
 
     def give_photo_question(self, chat_id, link, text, variants):
         keyboard = []
         for v in variants:
-            keyboard.append([v])
-        params = {"chat_id": chat_id, "photo": link, "caption": text, "reply_markup": json.dumps({"keyboard": keyboard, "one_time_keyboard": True, "resize_keyboard": True})}
-        requests.post(self.api_url + "sendPhoto", params)
+            keyboard.append([{"text": v, "callback_data": v}])
+        params = {"chat_id": chat_id, "photo": link, "caption": text, "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
+        while True:
+            res = requests.post(self.api_url + "sendPhoto", params).json()
+            if "result" not in res:
+                continue
+            self.last_markup[chat_id] = res["result"]["message_id"]
+            break
 
     def send_message(self, chat_id, text):
         params = {"chat_id": chat_id, "text": text}
@@ -227,7 +262,23 @@ class Bot:
                 print(update)
                 if "message" in update:
                     update["message"]["chat"]["id"] = str(update["message"]["chat"]["id"])
+                    chat_id = update["message"]["chat"]["id"]
+                    if chat_id in self.last_markup:
+                        message_id = self.last_markup[chat_id]
+                        params = {"chat_id": chat_id, "message_id": message_id}
+                        requests.post(self.api_url + "deleteMessage", params)
                     self.process_update_name(update)
                     self.process_update(update)
+                else:
+                    update1 = update["callback_query"]
+                    update1["message"]["text"] = update1["data"]
+                    update1["message"]["chat"]["id"] = str(update1["message"]["chat"]["id"])
+                    chat_id = update1["message"]["chat"]["id"]
+                    if chat_id in self.last_markup:
+                        message_id = self.last_markup[chat_id]
+                        params = {"chat_id": chat_id, "message_id": message_id}
+                        requests.post(self.api_url + "deleteMessage", params)
+                    self.process_update_name(update1)
+                    self.process_update(update1)
                 self.offset = max(self.offset, update['update_id'] + 1)
             time.sleep(1)
