@@ -18,6 +18,7 @@ class Bot:
         self.questions = self.logger.main_log_data['questions_assignment']
         self.stats = self.logger.main_log_data['stats']
         self.name = self.logger.main_log_data['name']
+        self.last_theme = self.logger.main_log_data['last_name']
 
         self.offset = 0
 
@@ -109,7 +110,7 @@ class Bot:
         text = "Пожалуйста, выберите тему."
         variants = []
         for v in self.theme_list:
-            if v != "Случайная тема":
+            if v != "Случайная тема" and v != "Секрет":
                 variants.append(v)
         self.give_text_question(chat_id, text, variants)
 
@@ -124,6 +125,8 @@ class Bot:
 
     def choose_theme_question(self, chat_id, theme):
         question_id = self.theme_list[theme][random.randint(0, len(self.theme_list[theme]) - 1)]
+        self.last_theme[chat_id] = question_id
+        # add logger
         reply_text = self.questions_list[question_id]["question"]
         reply_text += "\nВарианты ответов:"
         wrong_answers = self.questions_list[question_id]["wrong_answers"]
@@ -148,12 +151,10 @@ class Bot:
             self.give_photo_question(chat_id, self.questions_list[question_id]["link"], reply_text, ["1", "2", "3", "4"])
 
     def rep_command_handler(self, chat_id, update):
-        if chat_id not in self.questions:
-            self.send_message(chat_id, "Сейчас Вы отвечаете на другой вопрос или у Вас нет активного вопроса")
-        elif self.questions[chat_id][0] != -2:
-            self.send_message(chat_id, "Сейчас Вы отвечаете на другой вопрос или у Вас нет активного вопроса")
+        if chat_id not in self.last_theme:
+            self.send_message(chat_id, "Вы ещё не задавали вопросов")
         else:
-            self.choose_theme_question(chat_id, self.questions_list[self.questions[chat_id][1]]["theme"])
+            self.choose_theme_question(chat_id, self.last_theme[chat_id])
 
     def simple_text_handler(self, chat_id, update):
         question_id = self.questions.pop(chat_id, None)
@@ -173,16 +174,12 @@ class Bot:
             self.stats[chat_id][1] += 1
             self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='ok')
             self.send_message(chat_id, "Верный ответ!\nВведите /rep, если хотите вопрос на ту же тему.")
-            self.questions[chat_id] = [-2, question_id[0]]
-            self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=[-2, question_id[0]])
         else:
             if chat_id not in self.stats:
                 self.stats[chat_id] = [0, 0]
             self.stats[chat_id][1] += 1
             self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='wrong')
             self.send_message(chat_id, f"Неправильный ответ.\nПравильный ответ: {question_id[1]}.\nВведите /rep, если хотите вопрос на ту же тему.")
-            self.questions[chat_id] = [-2, question_id[0]]
-            self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=[-2, question_id[0]])
 
     def process_update(self, update):
         if 'message' not in update:

@@ -25,14 +25,14 @@ def bake_command():
         if dirname == '.gitkeep':
             continue
         filename = '{}/{}'.format(bake_dir_pth, dirname)
-        kek = open(filename, 'r').read()
+        kek = open(filename, 'r', encoding='utf-8').read()
         pack = json.loads(kek)
         for elem in pack:
             elem['id'] = last_id
             last_id += 1
             whole_pack.append(elem)
         print('Baked {}'.format(filename))
-    open(result_filename, 'w').write(json.dumps(whole_pack, ensure_ascii=False))
+    open(result_filename, 'w', encoding='utf-8').write(json.dumps(whole_pack, ensure_ascii=False))
     print('Baked {} elements'.format(last_id))
 
 
