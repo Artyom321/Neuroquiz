@@ -23,17 +23,18 @@ class Bot:
 
         self.commands_handlers = {
             '/start': self.start_command_handler,
-            '/question': self.question_command_handler,
+            '/leaderboard': self.leaderboard_command_handler,
             '/help': self.help_command_handler,
             '/stats': self.stats_command_handler,
-            '/leaderboard': self.leaderboard_command_handler,
+            '/rand': self.rand_command_handler,
+            '/theme': self.theme_command_handler,
+            '/rep': self.rep_command_handler,
             '/credits': self.credits_command_handler,
         }
 
         self.questions_list = dict()
         self.theme_list = dict()
         self.theme_list["Случайная тема"] = []
-        self.name = dict()
 
         with open('questions_list.json', encoding='utf-8') as f:
             tmp = json.load(f)
@@ -85,6 +86,31 @@ class Bot:
                   f"Ваш процент правильных ответов равен {correct * 100 // max(total, 1)}%."
         self.send_message(chat_id, message)
 
+    def rand_command_handler(self, chat_id, update):
+        theme = "Случайная тема"
+        question_id = self.theme_list[theme][random.randint(0, len(self.theme_list[theme]) - 1)]
+        reply_text = self.questions_list[question_id]["question"]
+        reply_text += "\nВарианты ответов:"
+        wrong_answers = self.questions_list[question_id]["wrong_answers"]
+        random.shuffle(wrong_answers)
+        variants = wrong_answers[0:3]
+        variants.append(self.questions_list[question_id]["answer"])
+        random.shuffle(variants)
+        correct = 0
+        for i in range(4):
+            reply_text += '\n' + str(i + 1) + '. ' + variants[i]
+            if variants[i] == self.questions_list[question_id]["answer"]:
+                correct = i + 1
+
+        self.questions[chat_id] = [question_id, correct]
+        self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=[question_id, correct])
+
+        if self.questions_list[question_id]["photo"] == 0:
+            self.give_text_question(chat_id, reply_text, ["1", "2", "3", "4"])
+        else:
+            self.give_photo_question(chat_id, self.questions_list[question_id]["link"], reply_text,
+                                     ["1", "2", "3", "4"])
+
     def start_command_handler(self, chat_id, update):
         greetings_message = open('bot_info_messages/greetings.txt', 'r').read().replace('{{name}}', self.name[chat_id])
         self.send_message(chat_id, greetings_message)
@@ -97,10 +123,11 @@ class Bot:
         text = "Пожалуйста, выберите тему."
         variants = []
         for v in self.theme_list:
-            variants.append(v)
+            if v != "Случайная тема":
+                variants.append(v)
         self.give_text_question(chat_id, text, variants)
 
-    def question_command_handler(self, chat_id, update):
+    def theme_command_handler(self, chat_id, update):
         self.choose_theme(chat_id)
         self.questions[chat_id] = [-1, -1]
         self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=[-1, -1])
@@ -132,6 +159,14 @@ class Bot:
         else:
             self.give_photo_question(chat_id, self.questions_list[question_id]["link"], reply_text, ["1", "2", "3", "4"])
 
+    def rep_command_handler(self, chat_id, update):
+        if chat_id not in self.questions:
+            self.send_message(chat_id, "Сейчас Вы отвечаете на другой вопрос или у Вас нет активного вопроса")
+        elif self.questions[chat_id][0] != -2:
+            self.send_message(chat_id, "Сейчас Вы отвечаете на другой вопрос или у Вас нет активного вопроса")
+        else:
+            self.choose_theme_question(chat_id, self.questions_list[self.questions[chat_id][1]]["theme"])
+
     def simple_text_handler(self, chat_id, update):
         question_id = self.questions.pop(chat_id, None)
         if question_id is None:
@@ -148,14 +183,18 @@ class Bot:
                 self.stats[chat_id] = [0, 0]
             self.stats[chat_id][0] += 1
             self.stats[chat_id][1] += 1
-            self.send_message(chat_id, "Верный ответ!")
             self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='ok')
+            self.send_message(chat_id, "Верный ответ!\nВведите /rep, если хотите вопрос на ту же тему.")
+            self.questions[chat_id] = [-2, question_id[0]]
+            self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=[-2, question_id[0]])
         else:
             if chat_id not in self.stats:
                 self.stats[chat_id] = [0, 0]
             self.stats[chat_id][1] += 1
-            self.send_message(chat_id, f"Неправильный ответ.\nПравильный ответ: {question_id[1]}")
             self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='wrong')
+            self.send_message(chat_id, f"Неправильный ответ.\nПравильный ответ: {question_id[1]}.\nВведите /rep, если хотите вопрос на ту же тему.")
+            self.questions[chat_id] = [-2, question_id[0]]
+            self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=[-2, question_id[0]])
 
     def process_update(self, update):
         if 'message' not in update:
