@@ -112,11 +112,11 @@ class Bot:
                                      ["1", "2", "3", "4"])
 
     def start_command_handler(self, chat_id, update):
-        greetings_message = open('bot_info_messages/greetings.txt', 'r').read().replace('{{name}}', self.name[chat_id])
+        greetings_message = open('bot_info_messages/greetings.txt', 'r', encoding='utf-8').read().replace('{{name}}', self.name[chat_id])
         self.send_message(chat_id, greetings_message)
 
     def credits_command_handler(self, chat_id, update):
-        credits_message = open('bot_info_messages/credits.txt', 'r').read()
+        credits_message = open('bot_info_messages/credits.txt', 'r', encoding='utf-8').read()
         self.send_message(chat_id, credits_message)
 
     def choose_theme(self, chat_id):
@@ -133,7 +133,7 @@ class Bot:
         self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=[-1, -1])
 
     def help_command_handler(self, chat_id, update):
-        help_message = open('bot_info_messages/help.txt', 'r').read()
+        help_message = open('bot_info_messages/help.txt', 'r', encoding='utf-8').read()
         self.send_message(chat_id, help_message)
 
     def choose_theme_question(self, chat_id, theme):
