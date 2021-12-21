@@ -196,14 +196,14 @@ class Bot:
         keyboard = []
         for v in variants:
             keyboard.append([v])
-        params = {"chat_id": chat_id, "text": text, "reply_markup": json.dumps({"keyboard": keyboard, "one_time_keyboard": True})}
+        params = {"chat_id": chat_id, "text": text, "reply_markup": json.dumps({"keyboard": keyboard, "one_time_keyboard": True, "resize_keyboard": True})}
         requests.post(self.api_url + "sendMessage", params)
 
     def give_photo_question(self, chat_id, link, text, variants):
         keyboard = []
         for v in variants:
             keyboard.append([v])
-        params = {"chat_id": chat_id, "photo": link, "caption": text, "reply_markup": json.dumps({"keyboard": keyboard, "one_time_keyboard": True})}
+        params = {"chat_id": chat_id, "photo": link, "caption": text, "reply_markup": json.dumps({"keyboard": keyboard, "one_time_keyboard": True, "resize_keyboard": True})}
         requests.post(self.api_url + "sendPhoto", params)
 
     def send_message(self, chat_id, text):
@@ -225,8 +225,9 @@ class Bot:
             updates = self.get_updates()
             for update in updates:
                 print(update)
-                update["message"]["chat"]["id"] = str(update["message"]["chat"]["id"])
-                self.process_update_name(update)
-                self.process_update(update)
+                if "message" in update:
+                    update["message"]["chat"]["id"] = str(update["message"]["chat"]["id"])
+                    self.process_update_name(update)
+                    self.process_update(update)
                 self.offset = max(self.offset, update['update_id'] + 1)
             time.sleep(1)
