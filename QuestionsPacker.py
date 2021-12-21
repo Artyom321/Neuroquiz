@@ -22,6 +22,8 @@ def bake_command():
     whole_pack = list()
     last_id = 0
     for dirname in os.listdir(bake_dir_pth):
+        if dirname == '.gitkeep':
+            continue
         filename = '{}/{}'.format(bake_dir_pth, dirname)
         kek = open(filename, 'r').read()
         pack = json.loads(kek)

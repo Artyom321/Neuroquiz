@@ -45,7 +45,7 @@ class Bot:
             if question["theme"] not in self.theme_list:
                 self.theme_list[question["theme"]] = []
             self.theme_list[question["theme"]].append(cur_id)
-            if question["id"] == 51:
+            if question["id"] == 0:
                 self.theme_list["Секрет"].append(cur_id)
             self.theme_list["Случайная тема"].append(cur_id)
             self.questions_list[question["id"]] = question
