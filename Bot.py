@@ -19,7 +19,7 @@ class Bot:
         self.stats = self.logger.main_log_data['stats']
         self.name = self.logger.main_log_data['name']
         self.last_theme = self.logger.main_log_data['last_theme']
-        self.last_markup = dict()
+        self.last_markup = dict()  # add log
 
         self.offset = 0
 
@@ -113,7 +113,7 @@ class Bot:
         for v in self.theme_list:
             if v != "Случайная тема" and v != "Секрет":
                 variants.append(v)
-        self.give_text_question(chat_id, text, variants)
+        self.give_text_question1(chat_id, text, variants)
 
     def theme_command_handler(self, chat_id, update):
         self.choose_theme(chat_id)
@@ -185,7 +185,7 @@ class Bot:
                 res = requests.post(self.api_url + "sendMessage", params).json()
                 if "result" not in res:
                     continue
-                self.last_markup[chat_id] = res["result"]["message_id"]
+                self.last_markup[chat_id] = [res["result"]["message_id"], 1]
                 break
         else:
             if chat_id not in self.stats:
@@ -203,7 +203,7 @@ class Bot:
                 res = requests.post(self.api_url + "sendMessage", params).json()
                 if "result" not in res:
                     continue
-                self.last_markup[chat_id] = res["result"]["message_id"]
+                self.last_markup[chat_id] = [res["result"]["message_id"], 1]
                 break
 
     def process_update(self, update):
@@ -226,7 +226,19 @@ class Bot:
             res = requests.post(self.api_url + "sendMessage", params).json()
             if "result" not in res:
                 continue
-            self.last_markup[chat_id] = res["result"]["message_id"]
+            self.last_markup[chat_id] = [res["result"]["message_id"], 0]
+            break
+
+    def give_text_question1(self, chat_id, text, variants):
+        keyboard = []
+        for v in variants:
+            keyboard.append([{"text": v, "callback_data": v}])
+        params = {"chat_id": chat_id, "text": text, "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
+        while True:
+            res = requests.post(self.api_url + "sendMessage", params).json()
+            if "result" not in res:
+                continue
+            self.last_markup[chat_id] = [res["result"]["message_id"], 1]
             break
 
     def give_photo_question(self, chat_id, link, text, variants):
@@ -238,12 +250,15 @@ class Bot:
             res = requests.post(self.api_url + "sendPhoto", params).json()
             if "result" not in res:
                 continue
-            self.last_markup[chat_id] = res["result"]["message_id"]
+            self.last_markup[chat_id] = [res["result"]["message_id"], 0]
             break
 
     def send_message(self, chat_id, text):
         params = {"chat_id": chat_id, "text": text}
-        return requests.post(self.api_url + "sendMessage", params)
+        while True:
+            res = requests.post(self.api_url + "sendMessage", params).json()
+            if res["ok"]:
+                break
 
     def process_update_name(self, update):
         chat_id = update['message']['chat']['id']
@@ -274,11 +289,22 @@ class Bot:
                     update1["message"]["text"] = update1["data"]
                     update1["message"]["chat"]["id"] = str(update1["message"]["chat"]["id"])
                     chat_id = update1["message"]["chat"]["id"]
-                    if chat_id in self.last_markup:
-                        message_id = self.last_markup[chat_id]
-                        params = {"chat_id": chat_id, "message_id": message_id}
-                        requests.post(self.api_url + "deleteMessage", params)
-                    self.process_update_name(update1)
-                    self.process_update(update1)
+                    if chat_id in self.last_markup and self.last_markup[chat_id][0] == update1["message"]["message_id"]:
+                        message_id = self.last_markup[chat_id][0]
+                        if self.last_markup[chat_id][1] == 1:
+                            params = {"chat_id": chat_id, "message_id": message_id}
+                            while True:
+                                res = requests.post(self.api_url + "deleteMessage", params).json()
+                                if res["ok"]:
+                                    break
+                        if self.last_markup[chat_id][1] == 0:
+                            params = {"chat_id": chat_id, "message_id": message_id, "reply_markup": json.dumps({"inline_keyboard": []})}
+                            while True:
+                                res = requests.post(self.api_url + "editMessageReplyMarkup", params).json()
+                                if res["ok"]:
+                                    break
+                        self.last_markup.pop(chat_id)
+                        self.process_update_name(update1)
+                        self.process_update(update1)
                 self.offset = max(self.offset, update['update_id'] + 1)
             time.sleep(1)
