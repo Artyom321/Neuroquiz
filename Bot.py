@@ -30,11 +30,13 @@ class Bot:
             '/theme': self.theme_command_handler,
             '/rep': self.rep_command_handler,
             '/credits': self.credits_command_handler,
+            '/secret': self.secret_command_handler
         }
 
         self.questions_list = dict()
         self.theme_list = dict()
         self.theme_list["Случайная тема"] = []
+        self.theme_list["Секрет"] = []
 
         with open('questions_list.json', encoding='utf-8') as f:
             tmp = json.load(f)
@@ -43,6 +45,8 @@ class Bot:
             if question["theme"] not in self.theme_list:
                 self.theme_list[question["theme"]] = []
             self.theme_list[question["theme"]].append(cur_id)
+            if question["id"] == 51:
+                self.theme_list["Секрет"].append(cur_id)
             self.theme_list["Случайная тема"].append(cur_id)
             self.questions_list[question["id"]] = question
 
@@ -52,6 +56,9 @@ class Bot:
         if "result" not in resp:
             return []
         return resp["result"]
+
+    def secret_command_handler(self, chat_id, update):
+        self.choose_theme_question(chat_id, "Секрет")
 
     def leaderboard_command_handler(self, chat_id, update):
         top = []
@@ -143,7 +150,8 @@ class Bot:
         wrong_answers = self.questions_list[question_id]["wrong_answers"]
         random.shuffle(wrong_answers)
         variants = wrong_answers[0:3]
-        variants.append(self.questions_list[question_id]["answer"])
+        cnt_correct = len(self.questions_list[question_id]["answer"])
+        variants.append(self.questions_list[question_id]["answer"][random.randint(0, cnt_correct - 1)])
         random.shuffle(variants)
         correct = 0
         for i in range(4):
