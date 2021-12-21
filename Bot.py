@@ -26,7 +26,8 @@ class Bot:
             '/question': self.question_command_handler,
             '/help': self.help_command_handler,
             '/stats': self.stats_command_handler,
-            '/leaderboard': self.leaderboard_command_handler
+            '/leaderboard': self.leaderboard_command_handler,
+            '/credits': self.credits_command_handler,
         }
 
         self.questions_list = dict()
@@ -85,15 +86,12 @@ class Bot:
         self.send_message(chat_id, message)
 
     def start_command_handler(self, chat_id, update):
-        if 'username' in update['message']['from']:
-            greetings_message = 'Здравствуйте, {}!'.format(update['message']['from']['username'])
-        elif 'first_name' in update['message']['from'] and 'last_name' in update['message']['from']:
-            greetings_message = 'Здравствуйте, {} {}!'.format(update['message']['from']['first_name'],
-                                                              update['message']['from']['last_name'])
-        else:
-            greetings_message = 'Здравствуйте!'
-
+        greetings_message = open('bot_info_messages/greetings.txt', 'r').read().replace('{{name}}', self.name[chat_id])
         self.send_message(chat_id, greetings_message)
+
+    def credits_command_handler(self, chat_id, update):
+        credits_message = open('bot_info_messages/credits.txt', 'r').read()
+        self.send_message(chat_id, credits_message)
 
     def choose_theme(self, chat_id):
         text = "Пожалуйста, выберите тему."
@@ -108,7 +106,8 @@ class Bot:
         self.logger.add_to_log(operation_type='next', chat_id=chat_id, question_id=[-1, -1])
 
     def help_command_handler(self, chat_id, update):
-        self.send_message(chat_id, 'Памагити...')
+        help_message = open('bot_info_messages/help.txt', 'r').read()
+        self.send_message(chat_id, help_message)
 
     def choose_theme_question(self, chat_id, theme):
         question_id = self.theme_list[theme][random.randint(0, len(self.theme_list[theme]) - 1)]
