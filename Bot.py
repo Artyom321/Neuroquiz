@@ -27,9 +27,10 @@ class Bot:
         if ignore_previous_updates:
             updates = self.get_updates(timeout=0)
             for update in updates:
-                self.send_message(update['message']['chat']['id'],
-                                  open('bot_info_messages/error_response.txt', encoding='utf-8'),
-                                  reply_id=update['message']['message_id'])
+                if 'message' in update:
+                    self.send_message(update['message']['chat']['id'],
+                                      open('bot_info_messages/error_response.txt', encoding='utf-8'),
+                                      reply_id=update['message']['message_id'])
                 self.offset = max(self.offset, update['update_id'] + 1)
 
         self.commands_handlers = {
@@ -321,7 +322,7 @@ class Bot:
                         self.logger.add_to_log(operation_type='remove_markup', chat_id=chat_id)
                     self.process_update_name(update)
                     self.process_update(update)
-                else:
+                elif 'callback_query' in update:
                     update1 = update["callback_query"]
                     update1["message"]["text"] = update1["data"]
                     update1["message"]["chat"]["id"] = str(update1["message"]["chat"]["id"])
