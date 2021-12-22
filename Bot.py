@@ -267,6 +267,7 @@ class Bot:
             if "result" not in res:
                 continue
             self.last_markup[chat_id] = [res["result"]["message_id"], 0]
+            print(self.last_markup[chat_id])
             self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 0])
             break
 
@@ -299,9 +300,25 @@ class Bot:
                     update["message"]["chat"]["id"] = str(update["message"]["chat"]["id"])
                     chat_id = update["message"]["chat"]["id"]
                     if chat_id in self.last_markup:
-                        message_id = self.last_markup[chat_id]
-                        params = {"chat_id": chat_id, "message_id": message_id}
-                        requests.post(self.api_url + "deleteMessage", params)
+                        message_id = self.last_markup[chat_id][0]
+                        if self.last_markup[chat_id][1] == 1:
+                            params = {"chat_id": chat_id, "message_id": message_id}
+                            while True:
+                                res = requests.post(self.api_url + "deleteMessage", params).json()
+                                if res["ok"]:
+                                    break
+                        if self.last_markup[chat_id][1] == 0:
+                            params = {"chat_id": chat_id, "message_id": message_id,
+                                      "reply_markup": json.dumps({"inline_keyboard": []})}
+                            while True:
+                                res = requests.post(self.api_url + "editMessageReplyMarkup", params).json()
+                                if res["ok"]:
+                                    self.logger.add_to_log(operation_type='answer', chat_id=chat_id,
+                                                           status='not_active')
+                                    self.questions.pop(chat_id)
+                                    break
+                        self.last_markup.pop(chat_id)
+                        self.logger.add_to_log(operation_type='remove_markup', chat_id=chat_id)
                     self.process_update_name(update)
                     self.process_update(update)
                 else:
@@ -325,8 +342,30 @@ class Bot:
                                     break
                         self.last_markup.pop(chat_id)
                         self.logger.add_to_log(operation_type='remove_markup', chat_id=chat_id)
+                        print("Hi")
                         self.process_update_name(update1)
                         self.process_update(update1)
+                    elif chat_id in self.last_markup:
+                        message_id = self.last_markup[chat_id][0]
+                        if self.last_markup[chat_id][1] == 1:
+                            params = {"chat_id": chat_id, "message_id": message_id}
+                            while True:
+                                res = requests.post(self.api_url + "deleteMessage", params).json()
+                                if res["ok"]:
+                                    break
+                        if self.last_markup[chat_id][1] == 0:
+                            params = {"chat_id": chat_id, "message_id": message_id,
+                                      "reply_markup": json.dumps({"inline_keyboard": []})}
+                            while True:
+                                res = requests.post(self.api_url + "editMessageReplyMarkup", params).json()
+                                if res["ok"]:
+                                    self.logger.add_to_log(operation_type='answer', chat_id=chat_id,
+                                                           status='not_active')
+                                    self.questions.pop(chat_id)
+                                    break
+                        self.last_markup.pop(chat_id)
+                        self.logger.add_to_log(operation_type='remove_markup', chat_id=chat_id)
+
                 self.offset = max(self.offset, update['update_id'] + 1)
 
             update_iteration += 1
