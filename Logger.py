@@ -5,6 +5,7 @@ import os
 class Logger:
     MAIN_LOG_FILENAME = "logs/main_log.json"
     TEMP_LOG_FILENAME = "logs/temp_log.json"
+    TEMP_LOG_SIZE_THRESHOLD = 1048576
 
     def __init__(self):
         self.main_log_data = None
@@ -157,5 +158,20 @@ class Logger:
         if self.temp_log_seq:
             for operation in self.temp_log_seq:
                 self.commit_operation(operation)
+        self.write_main_log()
+        self.clear_tmp_log()
+
+    def is_time_to_backup(self) -> bool:
+        return int(os.path.getsize(self.TEMP_LOG_FILENAME)) >= self.TEMP_LOG_SIZE_THRESHOLD
+
+    def backup(self, bot):
+        self.main_log_data = {
+            'questions_assignment': bot.questions,
+            'stats': bot.stats,
+            'name': bot.name,
+            'last_committed_temp_log_id': -1,
+            'last_theme': bot.last_theme,
+            'last_markup': bot.last_markup,
+        }
         self.write_main_log()
         self.clear_tmp_log()
