@@ -289,6 +289,7 @@ class Bot:
         while True:
             updates = self.get_updates()
             for update in updates:
+                print(update)
                 if "message" in update:
                     update["message"]["chat"]["id"] = str(update["message"]["chat"]["id"])
                     chat_id = update["message"]["chat"]["id"]
