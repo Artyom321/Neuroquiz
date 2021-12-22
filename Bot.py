@@ -8,7 +8,9 @@ from Logger import Logger
 
 
 class Bot:
-    def __init__(self, token):
+    ITERATIONS_BEFORE_LOG_CHECK = 1000
+
+    def __init__(self, token, ignore_previous_updates=False):
         self.token = token
         self.api_url = "https://api.telegram.org/bot{}/".format(token)
 
@@ -22,6 +24,10 @@ class Bot:
         self.last_markup = self.logger.main_log_data['last_markup']
 
         self.offset = 0
+        if ignore_previous_updates:
+            updates = self.get_updates()
+            for update in updates:
+                self.offset = max(self.offset, update['update_id'] + 1)
 
         self.commands_handlers = {
             '/start': self.start_command_handler,
@@ -279,10 +285,10 @@ class Bot:
         self.logger.add_to_log(operation_type='add_name', chat_id=chat_id, name=self.name[chat_id])
 
     def main_loop(self):
+        update_iteration = 0
         while True:
             updates = self.get_updates()
             for update in updates:
-                print(update)
                 if "message" in update:
                     update["message"]["chat"]["id"] = str(update["message"]["chat"]["id"])
                     chat_id = update["message"]["chat"]["id"]
@@ -316,4 +322,9 @@ class Bot:
                         self.process_update_name(update1)
                         self.process_update(update1)
                 self.offset = max(self.offset, update['update_id'] + 1)
+
+            update_iteration += 1
+            if update_iteration % self.ITERATIONS_BEFORE_LOG_CHECK == 0:
+                if self.logger.is_time_to_backup():
+                    self.logger.backup(self)
             time.sleep(1)
