@@ -103,7 +103,7 @@ class Bot:
             correct = self.stats[chat_id][0]
             total = self.stats[chat_id][1]
         message = f"Вы правильно ответили на {correct} из {total} вопросов.\n" \
-                  f"Ваш процент правильных ответов равен {correct * 100 // max(total, 1)}%."
+                  f"Ваш процент правильных ответов равен {abs(correct) * 100 // max(total, 1)}%."
         self.send_message(chat_id, message)
 
     def rand_command_handler(self, chat_id, update):
@@ -186,7 +186,7 @@ class Bot:
         elif str(question_id[1]) == update['message']['text']:
             if chat_id not in self.stats:
                 self.stats[chat_id] = [0, 0]
-            if question_id[0] == 0: # заменить на id Евы
+            if question_id[0] == 0:
                 score = -1
                 if random.randint(0, 1) == 0:
                     score = 1

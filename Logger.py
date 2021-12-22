@@ -96,6 +96,8 @@ class Logger:
         self.main_log_data['stats'][operation['chat_id']][1] += 1
         if operation['status'] == 'ok':
             self.main_log_data['stats'][operation['chat_id']][0] += 1
+        elif operation['status'] == 'trolling':
+            self.main_log_data['stats'][operation['chat_id']][0] -= 1
 
     def commit_add_markup(self, operation):
         self.main_log_data['last_markup'][operation['chat_id']] = operation['value']
