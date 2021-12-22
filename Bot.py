@@ -343,7 +343,6 @@ class Bot:
                                     break
                         self.last_markup.pop(chat_id)
                         self.logger.add_to_log(operation_type='remove_markup', chat_id=chat_id)
-                        print("Hi")
                         self.process_update_name(update1)
                         self.process_update(update1)
                     elif chat_id in self.last_markup:
