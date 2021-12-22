@@ -296,6 +296,7 @@ class Bot:
         while True:
             updates = self.get_updates()
             for update in updates:
+                self.logger.write_action_log('UPDATE: ' + str(update))
                 print(update)
                 if "message" in update:
                     update["message"]["chat"]["id"] = str(update["message"]["chat"]["id"])
