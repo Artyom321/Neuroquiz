@@ -186,9 +186,20 @@ class Bot:
         elif str(question_id[1]) == update['message']['text']:
             if chat_id not in self.stats:
                 self.stats[chat_id] = [0, 0]
-            self.stats[chat_id][0] += 1
-            self.stats[chat_id][1] += 1
-            self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='ok')
+            if question_id[0] == 0: # заменить на id Евы
+                score = -1
+                if random.randint(0, 1) == 0:
+                    score = 1
+                self.stats[chat_id][0] += score
+                self.stats[chat_id][1] += 1
+                if score == 1:
+                    self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='ok')
+                else:
+                    self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='trolling')
+            else:
+                self.stats[chat_id][0] += 1
+                self.stats[chat_id][1] += 1
+                self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='ok')
             self.send_message(chat_id, "Верный ответ!")
             keyboard = []
             keyboard.append([{"text": "Вопрос на ту же тему", "callback_data": "/rep"}])
