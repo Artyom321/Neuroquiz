@@ -197,7 +197,7 @@ class Bot:
             while True:
                 res = requests.post(self.api_url + "sendMessage", params).json()
                 if "result" not in res:
-                    continue
+                    break
                 self.last_markup[chat_id] = [res["result"]["message_id"], 1]
                 self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 1])
                 break
@@ -216,7 +216,7 @@ class Bot:
             while True:
                 res = requests.post(self.api_url + "sendMessage", params).json()
                 if "result" not in res:
-                    continue
+                    break
                 self.last_markup[chat_id] = [res["result"]["message_id"], 1]
                 self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 1])
                 break
@@ -240,7 +240,7 @@ class Bot:
         while True:
             res = requests.post(self.api_url + "sendMessage", params).json()
             if "result" not in res:
-                continue
+                break
             self.last_markup[chat_id] = [res["result"]["message_id"], 0]
             self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 0])
             break
@@ -253,7 +253,7 @@ class Bot:
         while True:
             res = requests.post(self.api_url + "sendMessage", params).json()
             if "result" not in res:
-                continue
+                break
             self.last_markup[chat_id] = [res["result"]["message_id"], 1]
             self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 1])
             break
@@ -266,9 +266,8 @@ class Bot:
         while True:
             res = requests.post(self.api_url + "sendPhoto", params).json()
             if "result" not in res:
-                continue
+                break
             self.last_markup[chat_id] = [res["result"]["message_id"], 0]
-            print(self.last_markup[chat_id])
             self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 0])
             break
 
@@ -280,6 +279,7 @@ class Bot:
             res = requests.post(self.api_url + "sendMessage", params).json()
             if res["ok"]:
                 break
+            break
 
     def process_update_name(self, update):
         chat_id = update['message']['chat']['id']
@@ -307,17 +307,24 @@ class Bot:
                             while True:
                                 res = requests.post(self.api_url + "deleteMessage", params).json()
                                 if res["ok"]:
-                                    break
+                                    if 'text' in update['message'] and update['message']['text'] in self.commands_handlers:
+                                        if chat_id in self.questions:
+                                            self.questions.pop(chat_id)
+                                            self.logger.add_to_log(operation_type='answer', chat_id=chat_id, status='not_active')
+                                break
                         if self.last_markup[chat_id][1] == 0:
                             params = {"chat_id": chat_id, "message_id": message_id,
                                       "reply_markup": json.dumps({"inline_keyboard": []})}
                             while True:
                                 res = requests.post(self.api_url + "editMessageReplyMarkup", params).json()
                                 if res["ok"]:
-                                    self.logger.add_to_log(operation_type='answer', chat_id=chat_id,
-                                                           status='not_active')
-                                    self.questions.pop(chat_id)
+                                    if 'text' in update['message'] and update['message']['text'] in self.commands_handlers:
+                                        if chat_id in self.questions:
+                                            self.questions.pop(chat_id)
+                                            self.logger.add_to_log(operation_type='answer', chat_id=chat_id,
+                                                                   status='not_active')
                                     break
+                                break
                         self.last_markup.pop(chat_id)
                         self.logger.add_to_log(operation_type='remove_markup', chat_id=chat_id)
                     self.process_update_name(update)
@@ -335,37 +342,19 @@ class Bot:
                                 res = requests.post(self.api_url + "deleteMessage", params).json()
                                 if res["ok"]:
                                     break
+                                break
                         if self.last_markup[chat_id][1] == 0:
                             params = {"chat_id": chat_id, "message_id": message_id, "reply_markup": json.dumps({"inline_keyboard": []})}
                             while True:
                                 res = requests.post(self.api_url + "editMessageReplyMarkup", params).json()
                                 if res["ok"]:
                                     break
+                                break
                         self.last_markup.pop(chat_id)
                         self.logger.add_to_log(operation_type='remove_markup', chat_id=chat_id)
-                        print("Hi")
                         self.process_update_name(update1)
                         self.process_update(update1)
-                    elif chat_id in self.last_markup:
-                        message_id = self.last_markup[chat_id][0]
-                        if self.last_markup[chat_id][1] == 1:
-                            params = {"chat_id": chat_id, "message_id": message_id}
-                            while True:
-                                res = requests.post(self.api_url + "deleteMessage", params).json()
-                                if res["ok"]:
-                                    break
-                        if self.last_markup[chat_id][1] == 0:
-                            params = {"chat_id": chat_id, "message_id": message_id,
-                                      "reply_markup": json.dumps({"inline_keyboard": []})}
-                            while True:
-                                res = requests.post(self.api_url + "editMessageReplyMarkup", params).json()
-                                if res["ok"]:
-                                    self.logger.add_to_log(operation_type='answer', chat_id=chat_id,
-                                                           status='not_active')
-                                    self.questions.pop(chat_id)
-                                    break
-                        self.last_markup.pop(chat_id)
-                        self.logger.add_to_log(operation_type='remove_markup', chat_id=chat_id)
+
 
                 self.offset = max(self.offset, update['update_id'] + 1)
 
