@@ -10,7 +10,7 @@ from Logger import Logger
 class Bot:
     ITERATIONS_BEFORE_LOG_CHECK = 1000
 
-    def __init__(self, token):
+    def __init__(self, token, ignore_previous_updates=False):
         self.token = token
         self.api_url = "https://api.telegram.org/bot{}/".format(token)
 
@@ -24,6 +24,10 @@ class Bot:
         self.last_markup = self.logger.main_log_data['last_markup']
 
         self.offset = 0
+        if ignore_previous_updates:
+            updates = self.get_updates()
+            for update in updates:
+                self.offset = max(self.offset, update['update_id'] + 1)
 
         self.commands_handlers = {
             '/start': self.start_command_handler,
