@@ -25,10 +25,10 @@ class Bot:
 
         self.offset = 0
         if ignore_previous_updates:
-            updates = self.get_updates()
+            updates = self.get_updates(timeout=0)
             for update in updates:
                 self.send_message(update['message']['chat']['id'],
-                                  'Прошу прощения, у меня неполадки на сервере, в данный момент я не могу ответить на этот запрос :(',
+                                  open('bot_info_messages/error_response.txt', encoding='utf-8'),
                                   reply_id=update['message']['message_id'])
                 self.offset = max(self.offset, update['update_id'] + 1)
 
