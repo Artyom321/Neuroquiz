@@ -107,7 +107,9 @@ class Bot:
         self.send_message(chat_id, message)
 
     def rand_command_handler(self, chat_id, update):
-        theme = self.all_themes[random.randint(0, len(self.all_themes) - 1)]
+        theme = "Секрет"
+        while theme == "Секрет":
+            theme = self.all_themes[random.randint(0, len(self.all_themes) - 1)]
         self.choose_theme_question(chat_id, theme)
 
     def start_command_handler(self, chat_id, update):
