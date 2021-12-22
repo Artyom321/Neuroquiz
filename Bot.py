@@ -27,6 +27,9 @@ class Bot:
         if ignore_previous_updates:
             updates = self.get_updates()
             for update in updates:
+                self.send_message(update['message']['chat']['id'],
+                                  'Прошу прощения, у меня неполадки на сервере, в данный момент я не могу ответить на этот запрос :(',
+                                  reply_id=update['message']['message_id'])
                 self.offset = max(self.offset, update['update_id'] + 1)
 
         self.commands_handlers = {
@@ -267,8 +270,10 @@ class Bot:
             self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 0])
             break
 
-    def send_message(self, chat_id, text):
+    def send_message(self, chat_id, text, reply_id=-1):
         params = {"chat_id": chat_id, "text": text}
+        if reply_id != -1:
+            params['reply_to_message_id'] = reply_id
         while True:
             res = requests.post(self.api_url + "sendMessage", params).json()
             if res["ok"]:
