@@ -37,8 +37,8 @@ class Bot:
 
         self.questions_list = dict()
         self.theme_list = dict()
-        self.theme_list["Случайная тема"] = []
         self.theme_list["Секрет"] = []
+        self.all_themes = []
 
         with open('questions_list.json', encoding='utf-8') as f:
             tmp = json.load(f)
@@ -49,8 +49,9 @@ class Bot:
             self.theme_list[question["theme"]].append(cur_id)
             if question["id"] == 0:
                 self.theme_list["Секрет"].append(cur_id)
-            self.theme_list["Случайная тема"].append(cur_id)
             self.questions_list[question["id"]] = question
+        for c in self.theme_list:
+            self.all_themes.append(c)
 
     def get_updates(self, timeout=30):
         params = {"timeout": timeout, "offset": self.offset}
@@ -96,7 +97,7 @@ class Bot:
         self.send_message(chat_id, message)
 
     def rand_command_handler(self, chat_id, update):
-        theme = "Случайная тема"
+        theme = self.all_themes[random.randint(0, len(self.all_themes) - 1)]
         self.choose_theme_question(chat_id, theme)
 
     def start_command_handler(self, chat_id, update):
@@ -111,7 +112,7 @@ class Bot:
         text = "Пожалуйста, выберите тему."
         variants = []
         for v in self.theme_list:
-            if v != "Случайная тема" and v != "Секрет":
+            if v != "Секрет":
                 variants.append(v)
         self.give_text_question1(chat_id, text, variants)
 
@@ -128,8 +129,10 @@ class Bot:
         question_id = self.theme_list[theme][random.randint(0, len(self.theme_list[theme]) - 1)]
         self.last_theme[chat_id] = self.questions_list[question_id]['theme']
         self.logger.add_to_log(operation_type='last_theme_update', chat_id=chat_id, theme=self.last_theme[chat_id])
-        reply_text = self.questions_list[question_id]["question"]
-        reply_text += "\nВарианты ответов:"
+        reply_text = "*"
+        reply_text += self.questions_list[question_id]["question"]
+        reply_text += "*"
+        reply_text += "\n\nВарианты ответов:"
         wrong_answers = self.questions_list[question_id]["wrong_answers"]
         random.shuffle(wrong_answers)
         variants = wrong_answers[0:3]
@@ -139,7 +142,7 @@ class Bot:
         random.shuffle(variants)
         correct = 0
         for i in range(4):
-            reply_text += '\n' + str(i + 1) + '. ' + variants[i]
+            reply_text += '\n\n' + str(i + 1) + '. ' + variants[i]
             if variants[i] == answer:
                 correct = i + 1
 
@@ -177,7 +180,7 @@ class Bot:
             self.send_message(chat_id, "Верный ответ!")
             keyboard = []
             keyboard.append([{"text": "Вопрос на ту же тему", "callback_data": "/rep"}])
-            keyboard.append([{"text": "Случайный вопрос", "callback_data": "/rand"}])
+            keyboard.append([{"text": "Вопрос на случайную тему", "callback_data": "/rand"}])
             keyboard.append([{"text": "Моя статистика", "callback_data": "/stats"}])
             params = {"chat_id": chat_id, "text": "Предлагаем Вам:",
                       "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
@@ -196,7 +199,7 @@ class Bot:
             self.send_message(chat_id, f"Неправильный ответ.\nПравильный ответ: {question_id[1]}.")
             keyboard = []
             keyboard.append([{"text": "Вопрос на ту же тему", "callback_data": "/rep"}])
-            keyboard.append([{"text": "Случайный вопрос", "callback_data": "/rand"}])
+            keyboard.append([{"text": "Вопрос на случайную тему", "callback_data": "/rand"}])
             keyboard.append([{"text": "Моя статистика", "callback_data": "/stats"}])
             params = {"chat_id": chat_id, "text": "Предлагаем Вам:",
                       "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
@@ -223,7 +226,7 @@ class Bot:
         keyboard = []
         for v in variants:
             keyboard.append([{"text": v, "callback_data": v}])
-        params = {"chat_id": chat_id, "text": text, "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
+        params = {"parse_mode": "Markdown", "chat_id": chat_id, "text": text, "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
         while True:
             res = requests.post(self.api_url + "sendMessage", params).json()
             if "result" not in res:
@@ -236,7 +239,7 @@ class Bot:
         keyboard = []
         for v in variants:
             keyboard.append([{"text": v, "callback_data": v}])
-        params = {"chat_id": chat_id, "text": text, "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
+        params = {"parse_mode": "Markdown", "chat_id": chat_id, "text": text, "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
         while True:
             res = requests.post(self.api_url + "sendMessage", params).json()
             if "result" not in res:
@@ -249,7 +252,7 @@ class Bot:
         keyboard = []
         for v in variants:
             keyboard.append([{"text": v, "callback_data": v}])
-        params = {"chat_id": chat_id, "photo": link, "caption": text, "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
+        params = {"parse_mode": "Markdown", "chat_id": chat_id, "photo": link, "caption": text, "reply_markup": json.dumps({"inline_keyboard": keyboard, "one_time_keyboard": True})}
         while True:
             res = requests.post(self.api_url + "sendPhoto", params).json()
             if "result" not in res:
