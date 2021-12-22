@@ -8,7 +8,9 @@ from Logger import Logger
 
 
 class Bot:
-    def __init__(self, token):
+    ITERATIONS_BEFORE_LOG_CHECK = 1000
+
+    def __init__(self, token, ignore_previous_updates=False):
         self.token = token
         self.api_url = "https://api.telegram.org/bot{}/".format(token)
 
@@ -22,6 +24,13 @@ class Bot:
         self.last_markup = self.logger.main_log_data['last_markup']
 
         self.offset = 0
+        if ignore_previous_updates:
+            updates = self.get_updates()
+            for update in updates:
+                self.send_message(update['message']['chat']['id'],
+                                  'Прошу прощения, у меня неполадки на сервере, в данный момент я не могу ответить на этот запрос :(',
+                                  reply_id=update['message']['message_id'])
+                self.offset = max(self.offset, update['update_id'] + 1)
 
         self.commands_handlers = {
             '/start': self.start_command_handler,
@@ -262,8 +271,10 @@ class Bot:
             self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 0])
             break
 
-    def send_message(self, chat_id, text):
+    def send_message(self, chat_id, text, reply_id=-1):
         params = {"chat_id": chat_id, "text": text}
+        if reply_id != -1:
+            params['reply_to_message_id'] = reply_id
         while True:
             res = requests.post(self.api_url + "sendMessage", params).json()
             if res["ok"]:
@@ -280,6 +291,7 @@ class Bot:
         self.logger.add_to_log(operation_type='add_name', chat_id=chat_id, name=self.name[chat_id])
 
     def main_loop(self):
+        update_iteration = 0
         while True:
             updates = self.get_updates()
             for update in updates:
@@ -355,4 +367,9 @@ class Bot:
                         self.logger.add_to_log(operation_type='remove_markup', chat_id=chat_id)
 
                 self.offset = max(self.offset, update['update_id'] + 1)
+
+            update_iteration += 1
+            if update_iteration % self.ITERATIONS_BEFORE_LOG_CHECK == 0:
+                if self.logger.is_time_to_backup():
+                    self.logger.backup(self)
             time.sleep(1)
