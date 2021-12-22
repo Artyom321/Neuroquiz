@@ -19,7 +19,7 @@ class Bot:
         self.stats = self.logger.main_log_data['stats']
         self.name = self.logger.main_log_data['name']
         self.last_theme = self.logger.main_log_data['last_theme']
-        self.last_markup = dict()  # add log
+        self.last_markup = self.logger.main_log_data['last_markup']
 
         self.offset = 0
 
@@ -186,6 +186,7 @@ class Bot:
                 if "result" not in res:
                     continue
                 self.last_markup[chat_id] = [res["result"]["message_id"], 1]
+                self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 1])
                 break
         else:
             if chat_id not in self.stats:
@@ -204,6 +205,7 @@ class Bot:
                 if "result" not in res:
                     continue
                 self.last_markup[chat_id] = [res["result"]["message_id"], 1]
+                self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 1])
                 break
 
     def process_update(self, update):
@@ -227,6 +229,7 @@ class Bot:
             if "result" not in res:
                 continue
             self.last_markup[chat_id] = [res["result"]["message_id"], 0]
+            self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 0])
             break
 
     def give_text_question1(self, chat_id, text, variants):
@@ -239,6 +242,7 @@ class Bot:
             if "result" not in res:
                 continue
             self.last_markup[chat_id] = [res["result"]["message_id"], 1]
+            self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 1])
             break
 
     def give_photo_question(self, chat_id, link, text, variants):
@@ -251,6 +255,7 @@ class Bot:
             if "result" not in res:
                 continue
             self.last_markup[chat_id] = [res["result"]["message_id"], 0]
+            self.logger.add_to_log(operation_type='add_markup', chat_id=chat_id, value=[res["result"]["message_id"], 0])
             break
 
     def send_message(self, chat_id, text):
@@ -304,6 +309,7 @@ class Bot:
                                 if res["ok"]:
                                     break
                         self.last_markup.pop(chat_id)
+                        self.logger.add_to_log(operation_type='remove_markup', chat_id=chat_id)
                         self.process_update_name(update1)
                         self.process_update(update1)
                 self.offset = max(self.offset, update['update_id'] + 1)

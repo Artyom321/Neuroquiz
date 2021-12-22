@@ -15,6 +15,8 @@ class Logger:
             'answer': self.commit_operation_answer,
             'add_name': self.commit_operation_add_name,
             'last_theme_update': self.commit_last_theme_update,
+            'add_markup': self.commit_add_markup,
+            'remove_markup': self.commit_remove_markup,
         }
 
     def init_main_log_structure(self):
@@ -24,6 +26,7 @@ class Logger:
             'name': dict(),
             'last_committed_temp_log_id': -1,
             'last_theme': dict(),
+            'last_markup': dict(),
         }
 
     def read_main_log(self):
@@ -91,6 +94,12 @@ class Logger:
         self.main_log_data['stats'][operation['chat_id']][1] += 1
         if operation['status'] == 'ok':
             self.main_log_data['stats'][operation['chat_id']][0] += 1
+
+    def commit_add_markup(self, operation):
+        self.main_log_data['last_markup'][operation['chat_id']] = operation['value']
+
+    def commit_remove_markup(self, operation):
+        self.main_log_data['last_markup'].pop(operation['chat_id'], None)
 
     def commit_operation_add_name(self, operation):
         self.main_log_data['name'][operation['chat_id']] = operation['name']
